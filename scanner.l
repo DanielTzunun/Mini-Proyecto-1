@@ -1,10 +1,11 @@
 %{
 /* scanner.l - Analizador lexico de Nova (Flex) */
-#include <string>
-#include "ast.hpp"
-#include "parser.tab.hpp"
+#include <stdio.h>
+#include <string.h>
+#include "ast.h"
+#include "parser.tab.h"
 
-void errorLexico(int linea, const char* msg);
+void error_lexico(int linea, const char* msg);
 #define YY_USER_ACTION yylloc.first_line = yylineno;
 %}
 
@@ -21,23 +22,24 @@ void errorLexico(int linea, const char* msg);
 "guardar"                       { return T_GUARDAR; }
 "en"                            { return T_EN; }
 
-"entero"                        { yylval.tipo = Tipo::ENTERO;    return T_TIPO; }
-"mensaje"                       { yylval.tipo = Tipo::MENSAJE;   return T_TIPO; }
-"signo"                         { yylval.tipo = Tipo::SIGNO;     return T_TIPO; }
-"veracidad"                     { yylval.tipo = Tipo::VERACIDAD; return T_TIPO; }
+"entero"                        { yylval.tipo = TIPO_ENTERO;    return T_TIPO; }
+"mensaje"                       { yylval.tipo = TIPO_MENSAJE;   return T_TIPO; }
+"signo"                         { yylval.tipo = TIPO_SIGNO;     return T_TIPO; }
+"veracidad"                     { yylval.tipo = TIPO_VERACIDAD; return T_TIPO; }
 
-"verdadero"|"falso"             { yylval.str = new std::string(yytext); return T_BOOL; }
+"verdadero"|"falso"             { yylval.str = copiar_cadena(yytext); return T_BOOL; }
 
--?[0-9]+                        { yylval.str = new std::string(yytext); return T_ENTERO; }
-\"[^\"\n]*\"                    { yylval.str = new std::string(yytext); return T_MENSAJE; }
-\"[^\"\n]*                      { errorLexico(yylineno, "mensaje sin cerrar (falta la comilla final)"); }
-'[^'\\\n]'                      { yylval.str = new std::string(yytext); return T_SIGNO; }
+-?[0-9]+                        { yylval.str = copiar_cadena(yytext); return T_ENTERO; }
+\"[^\"\n]*\"                    { yylval.str = copiar_cadena(yytext); return T_MENSAJE; }
+\"[^\"\n]*                      { error_lexico(yylineno, "mensaje sin cerrar (falta la comilla final)"); }
+'[^'\\\n]'                      { yylval.str = copiar_cadena(yytext); return T_SIGNO; }
 
-[a-zA-Z_][a-zA-Z0-9_]*          { yylval.str = new std::string(yytext); return T_ID; }
+[a-zA-Z_][a-zA-Z0-9_]*          { yylval.str = copiar_cadena(yytext); return T_ID; }
 
 [:=;]                           { return yytext[0]; }
 
-.                               { std::string m = std::string("caracter no reconocido '") + yytext + "'";
-                                  errorLexico(yylineno, m.c_str()); }
+.                               { char m[64];
+                                  snprintf(m, sizeof m, "caracter no reconocido '%s'", yytext);
+                                  error_lexico(yylineno, m); }
 
 %%

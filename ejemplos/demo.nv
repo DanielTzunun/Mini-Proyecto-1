@@ -1,0 +1,8 @@
+// Demo de Nova
+constante:entero iva = 13;
+variable:mensaje nombre = "Ana";
+variable:entero precio = 100;
+variable:veracidad pagado = falso;
+
+guardar 150 en precio;
+guardar verdadero en pagado;

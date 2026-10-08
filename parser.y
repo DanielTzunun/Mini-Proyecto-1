@@ -1,27 +1,26 @@
 %code requires {
-#include <string>
-#include "ast.hpp"
+#include "ast.h"
 }
 
 %{
 /* parser.y - Analizador sintactico de Nova (Bison) */
-#include <cstdio>
-#include <string>
-#include "ast.hpp"
+#include <stdio.h>
+#include <string.h>
+#include "ast.h"
 
-int yylex();
+int yylex(void);
 void yyerror(const char* msg);
-extern int erroresSintacticos;
+extern int errores_sintacticos;
 %}
 
 %locations
 %define parse.error verbose
 
 %union {
-    std::string* str;
-    Tipo         tipo;
-    Expr*        expr;
-    Sentencia*   sent;
+    char*      str;
+    Tipo       tipo;
+    Expr*      expr;
+    Sentencia* sent;
 }
 
 %token T_VARIABLE  "variable"
@@ -42,55 +41,65 @@ extern int erroresSintacticos;
 
 programa
     : /* vacio */
-    | programa sentencia        { if ($2) programa.push_back($2); }
+    | programa sentencia        { if ($2) agregar_sentencia($2); }
     ;
 
 sentencia
     : declaracion ';'           { $$ = $1; }
     | asignacion ';'            { $$ = $1; }
-    | error ';'                 { yyerrok; $$ = nullptr; }   /* recuperacion de errores */
+    | error ';'                 { yyerrok; $$ = NULL; }   /* recuperacion de errores */
     ;
 
 declaracion
     : T_VARIABLE ':' T_TIPO T_ID
-        { $$ = nuevaSentencia(Sentencia::DECLARACION, false, $3, *$4, nullptr, @1.first_line); }
+        { $$ = nueva_sentencia(SENT_DECLARACION, 0, $3, $4, NULL, @1.first_line); }
     | T_VARIABLE ':' T_TIPO T_ID '=' expresion
-        { $$ = nuevaSentencia(Sentencia::DECLARACION, false, $3, *$4, $6, @1.first_line); }
+        { $$ = nueva_sentencia(SENT_DECLARACION, 0, $3, $4, $6, @1.first_line); }
     | T_CONSTANTE ':' T_TIPO T_ID '=' expresion
-        { $$ = nuevaSentencia(Sentencia::DECLARACION, true, $3, *$4, $6, @1.first_line); }
+        { $$ = nueva_sentencia(SENT_DECLARACION, 1, $3, $4, $6, @1.first_line); }
     ;
 
 asignacion
     : T_GUARDAR expresion T_EN T_ID
-        { $$ = nuevaSentencia(Sentencia::ASIGNACION, false, Tipo::DESCONOCIDO, *$4, $2, @1.first_line); }
+        { $$ = nueva_sentencia(SENT_ASIGNACION, 0, TIPO_DESCONOCIDO, $4, $2, @1.first_line); }
     ;
 
 expresion
-    : T_ENTERO   { $$ = nuevaExpr(Expr::LIT_ENTERO,    *$1, @1.first_line, Tipo::ENTERO); }
-    | T_MENSAJE  { $$ = nuevaExpr(Expr::LIT_MENSAJE,   *$1, @1.first_line, Tipo::MENSAJE); }
-    | T_SIGNO    { $$ = nuevaExpr(Expr::LIT_SIGNO,     *$1, @1.first_line, Tipo::SIGNO); }
-    | T_BOOL     { $$ = nuevaExpr(Expr::LIT_VERACIDAD, *$1, @1.first_line, Tipo::VERACIDAD); }
-    | T_ID       { $$ = nuevaExpr(Expr::IDENT,         *$1, @1.first_line, Tipo::DESCONOCIDO); }
+    : T_ENTERO   { $$ = nueva_expr(EXPR_ENTERO,    $1, @1.first_line, TIPO_ENTERO); }
+    | T_MENSAJE  { $$ = nueva_expr(EXPR_MENSAJE,   $1, @1.first_line, TIPO_MENSAJE); }
+    | T_SIGNO    { $$ = nueva_expr(EXPR_SIGNO,     $1, @1.first_line, TIPO_SIGNO); }
+    | T_BOOL     { $$ = nueva_expr(EXPR_VERACIDAD, $1, @1.first_line, TIPO_VERACIDAD); }
+    | T_ID       { $$ = nueva_expr(EXPR_IDENT,     $1, @1.first_line, TIPO_DESCONOCIDO); }
     ;
 
 %%
 
-static std::string reemplazar(std::string s, const std::string& a, const std::string& b) {
-    size_t p = 0;
-    while ((p = s.find(a, p)) != std::string::npos) { s.replace(p, a.size(), b); p += b.size(); }
-    return s;
+/* Reemplaza todas las apariciones de 'a' por 'b' dentro de s */
+static void reemplazar(char* s, size_t cap, const char* a, const char* b) {
+    char tmp[512];
+    size_t i = 0, j = 0, la = strlen(a), lb = strlen(b);
+    while (s[i] && j < sizeof(tmp) - 1) {
+        if (strncmp(s + i, a, la) == 0) {
+            for (size_t k = 0; k < lb && j < sizeof(tmp) - 1; k++) tmp[j++] = b[k];
+            i += la;
+        } else tmp[j++] = s[i++];
+    }
+    tmp[j] = '\0';
+    strncpy(s, tmp, cap - 1);
+    s[cap - 1] = '\0';
 }
 
 void yyerror(const char* msg) {
-    std::string m = msg;
-    m = reemplazar(m, "syntax error, ", "");
-    m = reemplazar(m, "syntax error", "sintaxis invalida");
-    m = reemplazar(m, "unexpected ", "se encontro ");
-    m = reemplazar(m, ", expecting ", ", se esperaba ");
-    m = reemplazar(m, " or ", " o ");
-    m = reemplazar(m, "end of file", "fin del archivo");
-    if (m.find("se esperaba ';'") != std::string::npos)
-        m += " (revise si falta ';' al final de la linea anterior)";
-    ++erroresSintacticos;
-    printf("Error sintactico (linea %d): %s\n", yylloc.first_line, m.c_str());
+    char m[512];
+    snprintf(m, sizeof m, "%s", msg);
+    reemplazar(m, sizeof m, "syntax error, ", "");
+    reemplazar(m, sizeof m, "syntax error", "sintaxis invalida");
+    reemplazar(m, sizeof m, "unexpected ", "se encontro ");
+    reemplazar(m, sizeof m, ", expecting ", ", se esperaba ");
+    reemplazar(m, sizeof m, " or ", " o ");
+    reemplazar(m, sizeof m, "end of file", "fin del archivo");
+    if (strstr(m, "se esperaba ';'") && strlen(m) < 400)
+        strcat(m, " (revise si falta ';' al final de la linea anterior)");
+    errores_sintacticos++;
+    printf("Error sintactico (linea %d): %s\n", yylloc.first_line, m);
 }

@@ -1,7 +1,7 @@
-# Nova - compilador (C++ / Flex / Bison)
+# Nova - compilador en C (Flex / Bison)
 
 ## Compilar y ejecutar
-    sudo apt install flex bison g++ make
+    sudo apt install flex bison gcc make
     make
     ./nova ejemplos/correcto.nv
 
@@ -10,13 +10,13 @@
 |---|---|
 | scanner.l | Analizador lexico (Flex): tokens |
 | parser.y | Analizador sintactico (Bison): gramatica y construccion del AST |
-| ast.hpp / ast.cpp | Nodos del AST, arbol y tabla AST |
-| semantic.hpp / semantic.cpp | Analizador semantico |
-| symtab.hpp / symtab.cpp | Tabla de simbolos |
-| main.cpp | Ejecuta las fases en orden |
+| ast.h / ast.c | Nodos del AST (lista enlazada), arbol y tabla AST |
+| semantic.h / semantic.c | Analizador semantico |
+| symtab.h / symtab.c | Tabla de simbolos (lista enlazada) |
+| main.c | Ejecuta las fases en orden |
 
 ## Lenguaje Nova
-    variable:entero edad = 20;       // variable (opcionalmente con valor)
+    variable:entero edad = 20;       // variable (valor opcional)
     constante:entero iva = 13;       // constante (valor obligatorio)
     guardar 21 en edad;              // asignacion
 
@@ -30,7 +30,7 @@ Tipos: entero, mensaje ("texto"), signo ('a'), veracidad (verdadero/falso).
 5. No se puede leer una variable sin valor.
 
 ## Ejemplos
-- ejemplos/correcto.nv
+- ejemplos/demo.nv, ejemplos/correcto.nv
 - ejemplos/errores_semanticos.nv
 - ejemplos/errores_sintacticos.nv
 - ejemplos/error_lexico.nv
