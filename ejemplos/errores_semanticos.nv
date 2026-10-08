@@ -1,0 +1,9 @@
+variable:entero edad = 20;
+constante:entero iva = 13;
+variable:entero edad;                // ya declarada
+variable:entero x = "hola";          // tipo incompatible
+guardar 5 en y;                      // y no existe
+guardar 9 en iva;                    // constante
+guardar 'a' en edad;                 // tipo incompatible
+variable:entero z;
+guardar z en edad;                   // z no tiene valor

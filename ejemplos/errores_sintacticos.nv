@@ -1,0 +1,5 @@
+variable entero b;          // falta ':'
+constante:entero k;         // la constante necesita valor
+guardar 5 b;                // falta 'en'
+variable:decimal d = 1;     // 'decimal' no es un tipo de Nova
+variable:entero a = 5       // falta ';'
