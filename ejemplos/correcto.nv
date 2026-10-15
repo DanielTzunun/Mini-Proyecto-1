@@ -1,4 +1,4 @@
-// Programa correcto en Nova
+
 variable:entero edad = 20;
 variable:entero contador;
 variable:mensaje nombre = "Ana";
@@ -6,7 +6,9 @@ variable:signo inicial = 'D';
 variable:veracidad activo = verdadero;
 constante:entero iva = 13;
 
-guardar 21 en edad;
-guardar 5 en contador;
-guardar falso en activo;
-guardar edad en contador;   // se guarda el valor de otra variable
+variable: mensaje amigo = "Rauuuul";
+
+// guardar 21 en edad;//
+// guardar 5 en contador;//
+// guardar falso en activo;//
+// guardar edad en contador; //

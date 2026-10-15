@@ -22,6 +22,17 @@
 
 Tipos: entero, mensaje ("texto"), signo ('a'), veracidad (verdadero/falso).
 
+Las funciones pueden declararse sin parametros ni valor de retorno. Su cuerpo admite declaraciones,
+asignaciones y llamadas a otras funciones:
+
+    funcion actualizar() {
+        variable:entero temporal = 1;
+        guardar temporal en edad;
+    }
+    actualizar();
+
+Nova analiza la sintaxis y valida las llamadas; todavia no ejecuta el cuerpo de las funciones.
+
 ## Reglas semanticas
 1. Declarar antes de usar.
 2. No declarar dos veces el mismo identificador.

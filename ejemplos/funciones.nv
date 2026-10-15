@@ -1,0 +1,8 @@
+variable:entero edad = 20;
+
+funcion actualizar() {
+    variable:entero temporal = 21;
+    guardar temporal en edad;
+}
+
+actualizar();

@@ -11,6 +11,14 @@
 int yylex(void);
 void yyerror(const char* msg);
 extern int errores_sintacticos;
+
+static Sentencia* anexar_a_lista(Sentencia* inicio, Sentencia* nueva) {
+    if (!inicio) return nueva;
+    Sentencia* ultimo = inicio;
+    while (ultimo->siguiente) ultimo = ultimo->siguiente;
+    ultimo->siguiente = nueva;
+    return inicio;
+}
 %}
 
 %locations
@@ -27,6 +35,7 @@ extern int errores_sintacticos;
 %token T_CONSTANTE "constante"
 %token T_GUARDAR   "guardar"
 %token T_EN        "en"
+%token T_FUNCION   "funcion"
 %token <tipo> T_TIPO    "tipo de dato"
 %token <str>  T_ID      "identificador"
 %token <str>  T_ENTERO  "numero entero"
@@ -35,7 +44,7 @@ extern int errores_sintacticos;
 %token <str>  T_BOOL    "verdadero/falso"
 
 %type <expr> expresion
-%type <sent> sentencia declaracion asignacion
+%type <sent> sentencia sentencia_bloque declaracion asignacion funcion llamada bloque_funcion
 
 %%
 
@@ -47,7 +56,31 @@ programa
 sentencia
     : declaracion ';'           { $$ = $1; }
     | asignacion ';'            { $$ = $1; }
+    | funcion                   { $$ = $1; }
+    | llamada ';'               { $$ = $1; }
     | error ';'                 { yyerrok; $$ = NULL; }   /* recuperacion de errores */
+    ;
+
+sentencia_bloque
+    : declaracion ';'           { $$ = $1; }
+    | asignacion ';'            { $$ = $1; }
+    | llamada ';'               { $$ = $1; }
+    ;
+
+funcion
+    : T_FUNCION T_ID '(' ')' '{' bloque_funcion '}'
+        { $$ = nueva_funcion($2, $6, @1.first_line); }
+    ;
+
+bloque_funcion
+    : /* vacio */               { $$ = NULL; }
+    | bloque_funcion sentencia_bloque
+                                { $$ = anexar_a_lista($1, $2); }
+    ;
+
+llamada
+    : T_ID '(' ')'
+        { $$ = nueva_llamada($1, @1.first_line); }
     ;
 
 declaracion

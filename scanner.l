@@ -21,6 +21,7 @@ void error_lexico(int linea, const char* msg);
 "constante"                     { return T_CONSTANTE; }
 "guardar"                       { return T_GUARDAR; }
 "en"                            { return T_EN; }
+"funcion"                       { return T_FUNCION; }
 
 "entero"                        { yylval.tipo = TIPO_ENTERO;    return T_TIPO; }
 "mensaje"                       { yylval.tipo = TIPO_MENSAJE;   return T_TIPO; }
@@ -29,6 +30,8 @@ void error_lexico(int linea, const char* msg);
 
 "verdadero"|"falso"             { yylval.str = copiar_cadena(yytext); return T_BOOL; }
 
+
+
 -?[0-9]+                        { yylval.str = copiar_cadena(yytext); return T_ENTERO; }
 \"[^\"\n]*\"                    { yylval.str = copiar_cadena(yytext); return T_MENSAJE; }
 \"[^\"\n]*                      { error_lexico(yylineno, "mensaje sin cerrar (falta la comilla final)"); }
@@ -36,7 +39,7 @@ void error_lexico(int linea, const char* msg);
 
 [a-zA-Z_][a-zA-Z0-9_]*          { yylval.str = copiar_cadena(yytext); return T_ID; }
 
-[:=;]                           { return yytext[0]; }
+[:=;(){}]                       { return yytext[0]; }
 
 .                               { char m[64];
                                   snprintf(m, sizeof m, "caracter no reconocido '%s'", yytext);

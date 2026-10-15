@@ -10,6 +10,7 @@ typedef struct Simbolo {
     int   inicializada;
     char* valor;      /* ultimo valor conocido (texto) o "-" */
     int   linea;      /* linea de declaracion */
+    int   ambito;
     struct Simbolo* siguiente;
 } Simbolo;
 
@@ -17,6 +18,8 @@ int      declarar_simbolo(const char* nombre, Tipo tipo, int es_constante,
                           int inicializada, const char* valor, int linea);  /* 0 si ya existe */
 Simbolo* buscar_simbolo(const char* nombre);                                /* NULL si no existe */
 void     asignar_valor(Simbolo* s, const char* valor);
+void     iniciar_ambito(void);
+void     terminar_ambito(void);
 void     imprimir_tabla_simbolos(void);
 
 #endif

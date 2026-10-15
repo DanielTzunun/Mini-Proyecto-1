@@ -29,9 +29,8 @@ static void error(int linea, const char* fmt, ...) {
     if (n_errores < MAX_ERRORES) mensajes[n_errores++] = copiar_cadena(completo);
 }
 
-/* Devuelve el tipo de una expresion; anota el tipo en los identificadores */
 static Tipo tipo_de(Expr* e) {
-    if (e->clase != EXPR_IDENT) return e->tipo;          /* literal: ya trae su tipo */
+    if (e->clase != EXPR_IDENT) return e->tipo;
     Simbolo* s = buscar_simbolo(e->texto);
     if (!s) {
         error(e->linea, "la variable '%s' no ha sido declarada", e->texto);
@@ -45,15 +44,30 @@ static Tipo tipo_de(Expr* e) {
     return s->tipo;
 }
 
-/* Valor textual conocido: si es un identificador, se usa su ultimo valor */
+
 static const char* valor_texto(const Expr* e) {
     if (e->clase != EXPR_IDENT) return e->texto;
     Simbolo* s = buscar_simbolo(e->texto);
     return s ? s->valor : "-";
 }
 
-void analizar_semantica(void) {
-    for (Sentencia* s = programa_inicio; s; s = s->siguiente) {
+static int existe_funcion(const char* nombre) {
+    for (Sentencia* s = programa_inicio; s; s = s->siguiente)
+        if (s->clase == SENT_FUNCION && strcmp(s->id, nombre) == 0) return 1;
+    return 0;
+}
+
+static void validar_llamadas(Sentencia* lista) {
+    for (Sentencia* s = lista; s; s = s->siguiente) {
+        if (s->clase == SENT_LLAMADA && !existe_funcion(s->id))
+            error(s->linea, "la funcion '%s' no ha sido declarada", s->id);
+        if (s->clase == SENT_FUNCION) validar_llamadas(s->cuerpo);
+    }
+}
+
+static void analizar_lista(Sentencia* lista, int dentro_funcion) {
+    for (Sentencia* s = lista; s; s = s->siguiente) {
+        if (s->clase == SENT_FUNCION || s->clase == SENT_LLAMADA) continue;
         if (s->clase == SENT_DECLARACION) {
             Simbolo* previo = buscar_simbolo(s->id);
             if (previo)
@@ -73,7 +87,7 @@ void analizar_semantica(void) {
             }
             if (!previo)
                 declarar_simbolo(s->id, s->tipo, s->es_constante, s->valor != NULL && ok, valor, s->linea);
-        } else {   /* SENT_ASIGNACION: guardar valor en id */
+        } else {
             Simbolo* dest = buscar_simbolo(s->id);
             Tipo tv = tipo_de(s->valor);
             if (!dest) {
@@ -89,7 +103,33 @@ void analizar_semantica(void) {
                       s->id, nombre_tipo(dest->tipo), nombre_tipo(tv));
                 continue;
             }
-            if (tv != TIPO_DESCONOCIDO) asignar_valor(dest, valor_texto(s->valor));
+            if (tv != TIPO_DESCONOCIDO && (!dentro_funcion || dest->ambito > 0))
+                asignar_valor(dest, valor_texto(s->valor));
         }
     }
+}
+
+void analizar_semantica(void) {
+    for (Sentencia* s = programa_inicio; s; s = s->siguiente) {
+        if (s->clase != SENT_FUNCION) continue;
+        for (Sentencia* anterior = programa_inicio; anterior != s; anterior = anterior->siguiente) {
+            if (anterior->clase == SENT_FUNCION && strcmp(anterior->id, s->id) == 0) {
+                error(s->linea, "la funcion '%s' ya fue declarada en la linea %d", s->id, anterior->linea);
+                break;
+            }
+        }
+    }
+
+    analizar_lista(programa_inicio, 0);
+
+    for (Sentencia* s = programa_inicio; s; s = s->siguiente) {
+        if (s->clase != SENT_FUNCION) continue;
+        if (buscar_simbolo(s->id))
+            error(s->linea, "el nombre de funcion '%s' ya se usa como variable", s->id);
+        iniciar_ambito();
+        analizar_lista(s->cuerpo, 1);
+        terminar_ambito();
+    }
+
+    validar_llamadas(programa_inicio);
 }

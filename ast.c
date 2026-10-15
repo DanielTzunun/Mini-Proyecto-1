@@ -33,8 +33,19 @@ Sentencia* nueva_sentencia(ClaseSent clase, int es_constante, Tipo tipo,
                            char* id, Expr* valor, int linea) {
     Sentencia* s = malloc(sizeof(Sentencia));
     s->clase = clase; s->es_constante = es_constante; s->tipo = tipo;
-    s->id = id; s->valor = valor; s->linea = linea; s->siguiente = NULL;
+    s->id = id; s->valor = valor; s->cuerpo = NULL;
+    s->linea = linea; s->siguiente = NULL;
     return s;
+}
+
+Sentencia* nueva_funcion(char* id, Sentencia* cuerpo, int linea) {
+    Sentencia* s = nueva_sentencia(SENT_FUNCION, 0, TIPO_DESCONOCIDO, id, NULL, linea);
+    s->cuerpo = cuerpo;
+    return s;
+}
+
+Sentencia* nueva_llamada(char* id, int linea) {
+    return nueva_sentencia(SENT_LLAMADA, 0, TIPO_DESCONOCIDO, id, NULL, linea);
 }
 
 void agregar_sentencia(Sentencia* s) {
@@ -61,39 +72,56 @@ static void detalle_expr(const Expr* e, char* buf, size_t n) {
 static void detalle_sent(const Sentencia* s, char* buf, size_t n) {
     if (s->clase == SENT_DECLARACION)
         snprintf(buf, n, "%s %s : %s", s->es_constante ? "constante" : "variable", s->id, nombre_tipo(s->tipo));
-    else
+    else if (s->clase == SENT_ASIGNACION)
         snprintf(buf, n, "guardar en %s", s->id);
+    else if (s->clase == SENT_FUNCION)
+        snprintf(buf, n, "funcion %s()", s->id);
+    else
+        snprintf(buf, n, "llamada %s()", s->id);
+}
+
+static void imprimir_lista_arbol(const Sentencia* lista, int nivel) {
+    char detalle[200], valor[200];
+    for (const Sentencia* s = lista; s; s = s->siguiente) {
+        detalle_sent(s, detalle, sizeof detalle);
+        printf("%*s- %s [linea %d]\n", nivel * 2, "", detalle, s->linea);
+        if (s->valor) {
+            detalle_expr(s->valor, valor, sizeof valor);
+            printf("%*s  Valor: %s %s\n", nivel * 2, "", nombre_expr(s->valor), valor);
+        }
+        if (s->clase == SENT_FUNCION) imprimir_lista_arbol(s->cuerpo, nivel + 1);
+    }
 }
 
 void imprimir_arbol(void) {
-    char d[200], v[200];
     printf("Programa\n");
-    for (Sentencia* s = programa_inicio; s; s = s->siguiente) {
-        int ultima = (s->siguiente == NULL);
-        detalle_sent(s, d, sizeof d);
-        printf(" %s %s %s [linea %d]\n", ultima ? "'--" : "|--",
-               s->clase == SENT_DECLARACION ? "Declaracion" : "Asignacion", d, s->linea);
+    imprimir_lista_arbol(programa_inicio, 1);
+}
+
+static int imprimir_lista_tabla(const Sentencia* lista, int padre, int* siguiente_id) {
+    char detalle[200];
+    for (const Sentencia* s = lista; s; s = s->siguiente) {
+        int id_sent = ++*siguiente_id;
+        detalle_sent(s, detalle, sizeof detalle);
+        const char* clase = s->clase == SENT_DECLARACION ? "Declaracion" :
+                            s->clase == SENT_ASIGNACION ? "Asignacion" :
+                            s->clase == SENT_FUNCION ? "Funcion" : "Llamada";
+        printf("%-4d %-14s %-6d %-34s %-5d\n", id_sent, clase, padre, detalle, s->linea);
         if (s->valor) {
-            detalle_expr(s->valor, v, sizeof v);
-            printf(" %s     '-- Valor: %s %s\n", ultima ? " " : "|", nombre_expr(s->valor), v);
+            ++*siguiente_id;
+            detalle_expr(s->valor, detalle, sizeof detalle);
+            printf("%-4d %-14s %-6d %-34s %-5d\n", *siguiente_id,
+                   nombre_expr(s->valor), id_sent, detalle, s->valor->linea);
         }
+        if (s->clase == SENT_FUNCION)
+            imprimir_lista_tabla(s->cuerpo, id_sent, siguiente_id);
     }
+    return *siguiente_id;
 }
 
 void imprimir_tabla_ast(void) {
-    char d[200];
-    int n = 0;
+    int siguiente_id = 0;
     printf("%-4s %-14s %-6s %-34s %-5s\n", "#", "Nodo", "Padre", "Detalle", "Linea");
     printf("---- -------------- ------ ---------------------------------- -----\n");
-    for (Sentencia* s = programa_inicio; s; s = s->siguiente) {
-        int id_sent = ++n;
-        detalle_sent(s, d, sizeof d);
-        printf("%-4d %-14s %-6d %-34s %-5d\n", id_sent,
-               s->clase == SENT_DECLARACION ? "Declaracion" : "Asignacion", 0, d, s->linea);
-        if (s->valor) {
-            ++n;
-            detalle_expr(s->valor, d, sizeof d);
-            printf("%-4d %-14s %-6d %-34s %-5d\n", n, nombre_expr(s->valor), id_sent, d, s->valor->linea);
-        }
-    }
+    imprimir_lista_tabla(programa_inicio, 0, &siguiente_id);
 }
