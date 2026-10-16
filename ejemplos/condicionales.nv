@@ -1,0 +1,16 @@
+variable:entero edad = 20;
+variable:veracidad activo = verdadero;
+
+if (edad >= 18 or activo) {
+    guardar 21 en edad;
+} else {
+    guardar 0 en edad;
+}
+
+funcion revisar() {
+    if (activo is not falso) {
+        variable:mensaje estado = "activo";
+    } else {
+        variable:mensaje estado = "inactivo";
+    }
+}

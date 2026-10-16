@@ -30,18 +30,47 @@ static void error(int linea, const char* fmt, ...) {
 }
 
 static Tipo tipo_de(Expr* e) {
-    if (e->clase != EXPR_IDENT) return e->tipo;
-    Simbolo* s = buscar_simbolo(e->texto);
-    if (!s) {
-        error(e->linea, "la variable '%s' no ha sido declarada", e->texto);
-        return TIPO_DESCONOCIDO;
+    if (e->clase == EXPR_IDENT) {
+        Simbolo* s = buscar_simbolo(e->texto);
+        if (!s) {
+            error(e->linea, "la variable '%s' no ha sido declarada", e->texto);
+            return TIPO_DESCONOCIDO;
+        }
+        e->tipo = s->tipo;
+        if (!s->inicializada) {
+            error(e->linea, "la variable '%s' se usa pero todavia no tiene valor", e->texto);
+            return TIPO_DESCONOCIDO;
+        }
+        return s->tipo;
     }
-    e->tipo = s->tipo;
-    if (!s->inicializada) {
-        error(e->linea, "la variable '%s' se usa pero todavia no tiene valor", e->texto);
-        return TIPO_DESCONOCIDO;
+
+    if (e->clase == EXPR_COMPARACION || e->clase == EXPR_OR) {
+        Tipo izquierda = tipo_de(e->izquierda);
+        Tipo derecha = tipo_de(e->derecha);
+        if (izquierda == TIPO_DESCONOCIDO || derecha == TIPO_DESCONOCIDO)
+            return TIPO_DESCONOCIDO;
+        if (e->clase == EXPR_OR) {
+            if (izquierda != TIPO_VERACIDAD || derecha != TIPO_VERACIDAD) {
+                error(e->linea, "el operador 'or' requiere operandos de tipo veracidad");
+                return TIPO_DESCONOCIDO;
+            }
+        } else {
+            if (izquierda != derecha) {
+                error(e->linea, "no se pueden comparar valores de tipo %s y %s",
+                      nombre_tipo(izquierda), nombre_tipo(derecha));
+                return TIPO_DESCONOCIDO;
+            }
+            if ((strcmp(e->texto, ">") == 0 || strcmp(e->texto, "<") == 0 ||
+                 strcmp(e->texto, ">=") == 0 || strcmp(e->texto, "<=") == 0) &&
+                izquierda != TIPO_ENTERO) {
+                error(e->linea, "el operador '%s' solo admite valores de tipo entero", e->texto);
+                return TIPO_DESCONOCIDO;
+            }
+        }
+        e->tipo = TIPO_VERACIDAD;
+        return e->tipo;
     }
-    return s->tipo;
+    return e->tipo;
 }
 
 
@@ -62,12 +91,43 @@ static void validar_llamadas(Sentencia* lista) {
         if (s->clase == SENT_LLAMADA && !existe_funcion(s->id))
             error(s->linea, "la funcion '%s' no ha sido declarada", s->id);
         if (s->clase == SENT_FUNCION) validar_llamadas(s->cuerpo);
+        if (s->clase == SENT_CONDICIONAL) {
+            validar_llamadas(s->cuerpo);
+            validar_llamadas(s->alternativa);
+        }
     }
+}
+
+static void analizar_lista(Sentencia* lista, int dentro_funcion);
+
+static void analizar_condicional(Sentencia* s, int dentro_funcion) {
+    Tipo tipo_condicion = tipo_de(s->valor);
+    if (tipo_condicion != TIPO_DESCONOCIDO && tipo_condicion != TIPO_VERACIDAD)
+        error(s->valor->linea, "la condicion de 'if' debe ser de tipo veracidad, no %s",
+              nombre_tipo(tipo_condicion));
+
+    EstadoSimbolos* estado = guardar_estado_simbolos();
+    iniciar_ambito();
+    analizar_lista(s->cuerpo, dentro_funcion);
+    terminar_ambito();
+    restaurar_estado_simbolos(estado);
+
+    if (s->alternativa) {
+        iniciar_ambito();
+        analizar_lista(s->alternativa, dentro_funcion);
+        terminar_ambito();
+        restaurar_estado_simbolos(estado);
+    }
+    liberar_estado_simbolos(estado);
 }
 
 static void analizar_lista(Sentencia* lista, int dentro_funcion) {
     for (Sentencia* s = lista; s; s = s->siguiente) {
         if (s->clase == SENT_FUNCION || s->clase == SENT_LLAMADA) continue;
+        if (s->clase == SENT_CONDICIONAL) {
+            analizar_condicional(s, dentro_funcion);
+            continue;
+        }
         if (s->clase == SENT_DECLARACION) {
             Simbolo* previo = buscar_simbolo(s->id);
             if (previo)

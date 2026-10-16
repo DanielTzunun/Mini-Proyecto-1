@@ -36,6 +36,15 @@ static Sentencia* anexar_a_lista(Sentencia* inicio, Sentencia* nueva) {
 %token T_GUARDAR   "guardar"
 %token T_EN        "en"
 %token T_FUNCION   "funcion"
+%token T_IF        "if"
+%token T_ELSE      "else"
+%token T_OR        "or"
+%token T_IGUAL     "=="
+%token T_DISTINTO  "!="
+%token T_MAYOR     ">"
+%token T_MENOR     "<"
+%token T_MAYOR_IGUAL ">="
+%token T_MENOR_IGUAL "<="
 %token <tipo> T_TIPO    "tipo de dato"
 %token <str>  T_ID      "identificador"
 %token <str>  T_ENTERO  "numero entero"
@@ -43,8 +52,12 @@ static Sentencia* anexar_a_lista(Sentencia* inicio, Sentencia* nueva) {
 %token <str>  T_SIGNO   "signo"
 %token <str>  T_BOOL    "verdadero/falso"
 
-%type <expr> expresion
-%type <sent> sentencia sentencia_bloque declaracion asignacion funcion llamada bloque_funcion
+%type <expr> expresion condicion
+%type <sent> sentencia sentencia_bloque declaracion asignacion funcion llamada
+%type <sent> bloque_funcion condicional
+
+%left T_OR
+%nonassoc T_IGUAL T_DISTINTO T_MAYOR T_MENOR T_MAYOR_IGUAL T_MENOR_IGUAL
 
 %%
 
@@ -57,6 +70,7 @@ sentencia
     : declaracion ';'           { $$ = $1; }
     | asignacion ';'            { $$ = $1; }
     | funcion                   { $$ = $1; }
+    | condicional               { $$ = $1; }
     | llamada ';'               { $$ = $1; }
     | error ';'                 { yyerrok; $$ = NULL; }   /* recuperacion de errores */
     ;
@@ -65,6 +79,7 @@ sentencia_bloque
     : declaracion ';'           { $$ = $1; }
     | asignacion ';'            { $$ = $1; }
     | llamada ';'               { $$ = $1; }
+    | condicional               { $$ = $1; }
     ;
 
 funcion
@@ -76,6 +91,13 @@ bloque_funcion
     : /* vacio */               { $$ = NULL; }
     | bloque_funcion sentencia_bloque
                                 { $$ = anexar_a_lista($1, $2); }
+    ;
+
+condicional
+    : T_IF '(' condicion ')' '{' bloque_funcion '}'
+        { $$ = nueva_condicional($3, $6, NULL, @1.first_line); }
+    | T_IF '(' condicion ')' '{' bloque_funcion '}' T_ELSE '{' bloque_funcion '}'
+        { $$ = nueva_condicional($3, $6, $10, @1.first_line); }
     ;
 
 llamada
@@ -103,6 +125,25 @@ expresion
     | T_SIGNO    { $$ = nueva_expr(EXPR_SIGNO,     $1, @1.first_line, TIPO_SIGNO); }
     | T_BOOL     { $$ = nueva_expr(EXPR_VERACIDAD, $1, @1.first_line, TIPO_VERACIDAD); }
     | T_ID       { $$ = nueva_expr(EXPR_IDENT,     $1, @1.first_line, TIPO_DESCONOCIDO); }
+    ;
+
+condicion
+    : expresion
+        { $$ = $1; }
+    | expresion T_IGUAL expresion
+        { $$ = nueva_expr_binaria(EXPR_COMPARACION, copiar_cadena("=="), $1, $3, @2.first_line); }
+    | expresion T_DISTINTO expresion
+        { $$ = nueva_expr_binaria(EXPR_COMPARACION, copiar_cadena("!="), $1, $3, @2.first_line); }
+    | expresion T_MAYOR expresion
+        { $$ = nueva_expr_binaria(EXPR_COMPARACION, copiar_cadena(">"), $1, $3, @2.first_line); }
+    | expresion T_MENOR expresion
+        { $$ = nueva_expr_binaria(EXPR_COMPARACION, copiar_cadena("<"), $1, $3, @2.first_line); }
+    | expresion T_MAYOR_IGUAL expresion
+        { $$ = nueva_expr_binaria(EXPR_COMPARACION, copiar_cadena(">="), $1, $3, @2.first_line); }
+    | expresion T_MENOR_IGUAL expresion
+        { $$ = nueva_expr_binaria(EXPR_COMPARACION, copiar_cadena("<="), $1, $3, @2.first_line); }
+    | condicion T_OR condicion
+        { $$ = nueva_expr_binaria(EXPR_OR, copiar_cadena("or"), $1, $3, @2.first_line); }
     ;
 
 %%

@@ -8,6 +8,17 @@ static Simbolo* inicio = NULL;
 static Simbolo* fin = NULL;
 static int ambito_actual = 0;
 
+typedef struct {
+    Simbolo* simbolo;
+    int inicializada;
+    char* valor;
+} EstadoSimbolo;
+
+struct EstadoSimbolos {
+    size_t cantidad;
+    EstadoSimbolo* simbolos;
+};
+
 Simbolo* buscar_simbolo(const char* nombre) {
     Simbolo* encontrado = NULL;
     for (Simbolo* s = inicio; s; s = s->siguiente)
@@ -58,6 +69,38 @@ void terminar_ambito(void) {
         while (fin->siguiente) fin = fin->siguiente;
     }
     ambito_actual--;
+}
+
+EstadoSimbolos* guardar_estado_simbolos(void) {
+    size_t cantidad = 0;
+    for (Simbolo* s = inicio; s; s = s->siguiente) cantidad++;
+
+    EstadoSimbolos* estado = malloc(sizeof(*estado));
+    estado->cantidad = cantidad;
+    estado->simbolos = malloc(cantidad * sizeof(*estado->simbolos));
+    size_t i = 0;
+    for (Simbolo* s = inicio; s; s = s->siguiente) {
+        estado->simbolos[i].simbolo = s;
+        estado->simbolos[i].inicializada = s->inicializada;
+        estado->simbolos[i].valor = copiar_cadena(s->valor);
+        i++;
+    }
+    return estado;
+}
+
+void restaurar_estado_simbolos(const EstadoSimbolos* estado) {
+    for (size_t i = 0; i < estado->cantidad; i++) {
+        Simbolo* s = estado->simbolos[i].simbolo;
+        s->inicializada = estado->simbolos[i].inicializada;
+        free(s->valor);
+        s->valor = copiar_cadena(estado->simbolos[i].valor);
+    }
+}
+
+void liberar_estado_simbolos(EstadoSimbolos* estado) {
+    for (size_t i = 0; i < estado->cantidad; i++) free(estado->simbolos[i].valor);
+    free(estado->simbolos);
+    free(estado);
 }
 
 void asignar_valor(Simbolo* s, const char* valor) {

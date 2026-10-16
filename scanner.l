@@ -22,6 +22,16 @@ void error_lexico(int linea, const char* msg);
 "guardar"                       { return T_GUARDAR; }
 "en"                            { return T_EN; }
 "funcion"                       { return T_FUNCION; }
+"if"                            { return T_IF; }
+"else"                          { return T_ELSE; }
+"||"|"or"                       { return T_OR; }
+"is"[ \t\r\n]+"not"            { return T_DISTINTO; }
+"=="|"is"                       { return T_IGUAL; }
+"!="                            { return T_DISTINTO; }
+">="                            { return T_MAYOR_IGUAL; }
+"<="                            { return T_MENOR_IGUAL; }
+">"|"greater"|"grater"          { return T_MAYOR; }
+"<"|"less"                       { return T_MENOR; }
 
 "entero"                        { yylval.tipo = TIPO_ENTERO;    return T_TIPO; }
 "mensaje"                       { yylval.tipo = TIPO_MENSAJE;   return T_TIPO; }
@@ -40,6 +50,7 @@ void error_lexico(int linea, const char* msg);
 [a-zA-Z_][a-zA-Z0-9_]*          { yylval.str = copiar_cadena(yytext); return T_ID; }
 
 [:=;(){}]                       { return yytext[0]; }
+
 
 .                               { char m[64];
                                   snprintf(m, sizeof m, "caracter no reconocido '%s'", yytext);

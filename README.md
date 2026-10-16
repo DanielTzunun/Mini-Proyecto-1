@@ -23,7 +23,7 @@
 Tipos: entero, mensaje ("texto"), signo ('a'), veracidad (verdadero/falso).
 
 Las funciones pueden declararse sin parametros ni valor de retorno. Su cuerpo admite declaraciones,
-asignaciones y llamadas a otras funciones:
+asignaciones, llamadas a otras funciones y condicionales:
 
     funcion actualizar() {
         variable:entero temporal = 1;
@@ -31,7 +31,17 @@ asignaciones y llamadas a otras funciones:
     }
     actualizar();
 
-Nova analiza la sintaxis y valida las llamadas; todavia no ejecuta el cuerpo de las funciones.
+    variable:veracidad activo = verdadero;
+    if (edad >= 18 or activo) {
+        guardar 1 en edad;
+    } else {
+        guardar 0 en edad;
+    }
+
+Nova analiza la sintaxis y valida las llamadas; todavia no ejecuta los programas.
+Las condiciones de `if` aceptan valores de tipo veracidad, comparaciones (`==`, `!=`, `>`,
+`<`, `>=`, `<=`) y el operador `or`. Tambien se aceptan `is`/`is not`, `greater`/`less`
+y `||` como aliases. Cada rama crea su propio ambito.
 
 ## Reglas semanticas
 1. Declarar antes de usar.
@@ -42,6 +52,7 @@ Nova analiza la sintaxis y valida las llamadas; todavia no ejecuta el cuerpo de 
 
 ## Ejemplos
 - ejemplos/demo.nv, ejemplos/correcto.nv
+- ejemplos/condicionales.nv
 - ejemplos/errores_semanticos.nv
 - ejemplos/errores_sintacticos.nv
 - ejemplos/error_lexico.nv
