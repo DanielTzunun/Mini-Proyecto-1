@@ -10,6 +10,8 @@ static const char* nombre_expr(const Expr* e) {
         case EXPR_VERACIDAD:   return "LitVeracidad";
         case EXPR_COMPARACION: return "Comparacion";
         case EXPR_OR:          return "O";
+        case EXPR_ARITMETICA:  return "Aritmetica";
+        case EXPR_NEGATIVO:    return "Negativo";
         case EXPR_ARREGLO:     return "Arreglo";
         case EXPR_INDICE:      return "Indice";
         default:               return "Identificador";
@@ -23,7 +25,8 @@ static int contar_elementos(const Expr* e) {
 }
 
 static void detalle_expr(const Expr* e, char* buf, size_t n) {
-    if (e->clase == EXPR_COMPARACION || e->clase == EXPR_OR) {
+    if (e->clase == EXPR_COMPARACION || e->clase == EXPR_OR ||
+        e->clase == EXPR_ARITMETICA || e->clase == EXPR_NEGATIVO) {
         snprintf(buf, n, "%s", e->texto);
     } else if (e->clase == EXPR_ARREGLO) {
         snprintf(buf, n, "[%d elemento(s)]", contar_elementos(e));
@@ -103,7 +106,9 @@ static void imprimir_lista_arbol(const Sentencia* lista, int nivel) {
             } else if (s->valor->clase == EXPR_ARREGLO ||
                        s->valor->clase == EXPR_INDICE ||
                        s->valor->clase == EXPR_COMPARACION ||
-                       s->valor->clase == EXPR_OR) {
+                       s->valor->clase == EXPR_OR ||
+                       s->valor->clase == EXPR_ARITMETICA ||
+                       s->valor->clase == EXPR_NEGATIVO) {
                 printf("%*s  Valor:\n", nivel * 2, "");
                 imprimir_expr_arbol(s->valor, nivel + 2);
             } else {

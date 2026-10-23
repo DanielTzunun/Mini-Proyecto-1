@@ -45,7 +45,7 @@
 
 "verdadero"|"falso"             { yylval.str = copiar_cadena(yytext); return T_BOOL; }
 
--?[0-9]+                        { yylval.str = copiar_cadena(yytext); return T_ENTERO; }
+[0-9]+                          { yylval.str = copiar_cadena(yytext); return T_ENTERO; }
 \"[^\"\n]*\"                    { yylval.str = copiar_cadena(yytext); return T_MENSAJE; }
 \"[^\"\n]*                      { error_lexico(yylineno, "mensaje sin cerrar (falta la comilla final)"); }
 '[^'\\\n]'                      { yylval.str = copiar_cadena(yytext); return T_SIGNO; }
@@ -55,6 +55,10 @@
 "["                             { return '['; }
 "]"                             { return ']'; }
 ","                             { return ','; }
+"+"                             { return '+'; }
+"-"                             { return '-'; }
+"*"                             { return '*'; }
+"/"                             { return '/'; }
 [:=;(){}]                       { return yytext[0]; }
 
 .                               { char m[64];

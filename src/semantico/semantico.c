@@ -83,6 +83,30 @@ static Tipo tipo_de(Expr* e) {
         return e->tipo;
     }
 
+    if (e->clase == EXPR_ARITMETICA) {
+        Tipo izquierda = tipo_de(e->izquierda);
+        Tipo derecha = tipo_de(e->derecha);
+        if (izquierda == TIPO_DESCONOCIDO || derecha == TIPO_DESCONOCIDO)
+            return TIPO_DESCONOCIDO;
+        if (izquierda != TIPO_ENTERO || derecha != TIPO_ENTERO) {
+            error(e->linea, "el operador '%s' solo admite valores de tipo entero", e->texto);
+            return TIPO_DESCONOCIDO;
+        }
+        e->tipo = TIPO_ENTERO;
+        return e->tipo;
+    }
+
+    if (e->clase == EXPR_NEGATIVO) {
+        Tipo operando = tipo_de(e->izquierda);
+        if (operando == TIPO_DESCONOCIDO) return TIPO_DESCONOCIDO;
+        if (operando != TIPO_ENTERO) {
+            error(e->linea, "el operador unario '-' solo admite valores de tipo entero");
+            return TIPO_DESCONOCIDO;
+        }
+        e->tipo = TIPO_ENTERO;
+        return e->tipo;
+    }
+
     if (e->clase == EXPR_COMPARACION || e->clase == EXPR_OR) {
         Tipo izquierda = tipo_de(e->izquierda);
         Tipo derecha = tipo_de(e->derecha);

@@ -60,6 +60,32 @@ Las condiciones de `if` aceptan valores de tipo veracidad, comparaciones (`==`, 
 `<`, `>=`, `<=`) y el operador `or`. Tambien se aceptan `is`/`is not`, `greater`/`less`
 y `||` como aliases. Cada rama crea su propio ambito.
 
+## Expresiones aritmeticas
+
+Nova admite sumas, restas, multiplicaciones y divisiones enteras, con parentesis y negacion:
+
+    variable:entero a = 10;
+    variable:entero b = 3;
+
+    mostrar a + b;              // 13
+    mostrar a - b;              // 7
+    mostrar a * b;              // 30
+    mostrar a / b;              // 3 (division entera)
+    mostrar (a + b) * 2;        // 26
+    mostrar -a;                 // -10
+    mostrar a - -b;             // 13
+
+Precedencia, de mayor a menor:
+
+1. Parentesis y acceso por indice `[]`
+2. Negacion unaria `-`
+3. `*` y `/`
+4. `+` y `-`
+5. Comparaciones (`==`, `!=`, `>`, `<`, `>=`, `<=`)
+6. `or`
+
+La division es entera. Si el divisor es cero, se reporta un error en tiempo de ejecucion.
+
 ## Arreglos
 
 Un arreglo se declara agregando `[]` despues del tipo. Su literal se escribe entre corchetes
@@ -122,9 +148,11 @@ un arreglo vacio.
 - `ejemplos/funciones.nv`
 - `ejemplos/condicionales.nv`
 - `ejemplos/arreglos.nv`
+- `ejemplos/aritmetica.nv`
 - `ejemplos/ejecucion.nv`
 - `ejemplos/errores_semanticos.nv`
 - `ejemplos/errores_arreglos.nv`
 - `ejemplos/errores_sintacticos.nv`
 - `ejemplos/error_lexico.nv`
 - `ejemplos/error_ejecucion.nv`
+- `ejemplos/error_aritmetica.nv`

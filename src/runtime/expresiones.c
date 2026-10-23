@@ -144,6 +144,60 @@ int evaluar_expresion(const Expr* e, Valor* salida) {
         case EXPR_INDICE:
             return evaluar_indice(e, salida);
 
+        case EXPR_ARITMETICA: {
+            Valor izquierda = {0};
+            Valor derecha = {0};
+            if (!evaluar_expresion(e->izquierda, &izquierda)) return 0;
+            if (!evaluar_expresion(e->derecha, &derecha)) {
+                valor_liberar(&izquierda);
+                return 0;
+            }
+
+            if (izquierda.clase != VAL_ENTERO || derecha.clase != VAL_ENTERO) {
+                error_runtime(e->linea, "el operador '%s' requiere valores enteros", e->texto);
+                valor_liberar(&izquierda);
+                valor_liberar(&derecha);
+                return 0;
+            }
+
+            int resultado = 0;
+            if (strcmp(e->texto, "+") == 0) resultado = izquierda.entero + derecha.entero;
+            else if (strcmp(e->texto, "-") == 0) resultado = izquierda.entero - derecha.entero;
+            else if (strcmp(e->texto, "*") == 0) resultado = izquierda.entero * derecha.entero;
+            else if (strcmp(e->texto, "/") == 0) {
+                if (derecha.entero == 0) {
+                    error_runtime(e->linea, "no se puede dividir entre cero");
+                    valor_liberar(&izquierda);
+                    valor_liberar(&derecha);
+                    return 0;
+                }
+                resultado = izquierda.entero / derecha.entero;
+            } else {
+                error_runtime(e->linea, "operador aritmetico desconocido '%s'", e->texto);
+                valor_liberar(&izquierda);
+                valor_liberar(&derecha);
+                return 0;
+            }
+
+            valor_liberar(&izquierda);
+            valor_liberar(&derecha);
+            *salida = valor_entero(resultado);
+            return 1;
+        }
+
+        case EXPR_NEGATIVO: {
+            Valor operando = {0};
+            if (!evaluar_expresion(e->izquierda, &operando)) return 0;
+            if (operando.clase != VAL_ENTERO) {
+                error_runtime(e->linea, "el operador unario '-' requiere un valor entero");
+                valor_liberar(&operando);
+                return 0;
+            }
+            *salida = valor_entero(-operando.entero);
+            valor_liberar(&operando);
+            return 1;
+        }
+
         case EXPR_COMPARACION: {
             Valor izquierda = {0};
             Valor derecha = {0};

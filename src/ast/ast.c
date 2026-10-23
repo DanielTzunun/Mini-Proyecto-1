@@ -26,6 +26,13 @@ Expr* nueva_expr_binaria(ClaseExpr clase, char* operador, Expr* izquierda,
     return e;
 }
 
+Expr* nueva_expr_unaria(ClaseExpr clase, char* operador, Expr* operando,
+                        int linea) {
+    Expr* e = nueva_expr(clase, operador, linea, TIPO_DESCONOCIDO);
+    e->izquierda = operando;
+    return e;
+}
+
 Expr* nueva_expr_arreglo(Expr* elementos, int linea) {
     Expr* e = nueva_expr(EXPR_ARREGLO, copiar_cadena("[]"), linea, TIPO_DESCONOCIDO);
     e->izquierda = elementos;

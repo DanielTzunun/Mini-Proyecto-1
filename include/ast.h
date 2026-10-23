@@ -24,7 +24,8 @@ Tipo        tipo_arreglo(Tipo elemento);
  * literal de arreglo o acceso a un elemento por indice. */
 typedef enum {
     EXPR_ENTERO, EXPR_MENSAJE, EXPR_SIGNO, EXPR_VERACIDAD, EXPR_IDENT,
-    EXPR_COMPARACION, EXPR_OR, EXPR_ARREGLO, EXPR_INDICE
+    EXPR_COMPARACION, EXPR_OR, EXPR_ARITMETICA, EXPR_NEGATIVO,
+    EXPR_ARREGLO, EXPR_INDICE
 } ClaseExpr;
 
 typedef struct Expr {
@@ -71,6 +72,8 @@ Sentencia* nueva_funcion(char* id, Sentencia* cuerpo, int linea);
 Sentencia* nueva_llamada(char* id, int linea);
 Expr*      nueva_expr_binaria(ClaseExpr clase, char* operador, Expr* izquierda,
                               Expr* derecha, int linea);
+Expr*      nueva_expr_unaria(ClaseExpr clase, char* operador, Expr* operando,
+                             int linea);
 Sentencia* nueva_condicional(Expr* condicion, Sentencia* cuerpo,
                              Sentencia* alternativa, int linea);
 

@@ -51,6 +51,10 @@
 
 %left T_OR
 %nonassoc T_IGUAL T_DISTINTO T_MAYOR T_MENOR T_MAYOR_IGUAL T_MENOR_IGUAL
+%left '+' '-'
+%left '*' '/'
+%precedence NEG
+%precedence '['
 
 %%
 
@@ -144,10 +148,22 @@ expresion
     | T_SIGNO    { $$ = nueva_expr(EXPR_SIGNO,     $1, @1.first_line, TIPO_SIGNO); }
     | T_BOOL     { $$ = nueva_expr(EXPR_VERACIDAD, $1, @1.first_line, TIPO_VERACIDAD); }
     | T_ID       { $$ = nueva_expr(EXPR_IDENT,     $1, @1.first_line, TIPO_DESCONOCIDO); }
+    | expresion '+' expresion
+                 { $$ = nueva_expr_binaria(EXPR_ARITMETICA, copiar_cadena("+"), $1, $3, @2.first_line); }
+    | expresion '-' expresion
+                 { $$ = nueva_expr_binaria(EXPR_ARITMETICA, copiar_cadena("-"), $1, $3, @2.first_line); }
+    | expresion '*' expresion
+                 { $$ = nueva_expr_binaria(EXPR_ARITMETICA, copiar_cadena("*"), $1, $3, @2.first_line); }
+    | expresion '/' expresion
+                 { $$ = nueva_expr_binaria(EXPR_ARITMETICA, copiar_cadena("/"), $1, $3, @2.first_line); }
+    | '-' expresion %prec NEG
+                 { $$ = nueva_expr_unaria(EXPR_NEGATIVO, copiar_cadena("-"), $2, @1.first_line); }
+    | '(' expresion ')'
+                 { $$ = $2; }
     | '[' ']'    { $$ = nueva_expr_arreglo(NULL, @1.first_line); }
     | '[' lista_expresiones ']'
                  { $$ = nueva_expr_arreglo($2, @1.first_line); }
-    | expresion '[' expresion ']'
+    | expresion '[' expresion ']' %prec '['
                  { $$ = nueva_expr_indice($1, $3, @2.first_line); }
     ;
 
