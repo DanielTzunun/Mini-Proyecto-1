@@ -1,19 +1,12 @@
 /* main.c - Programa principal del compilador Nova */
 #include <stdio.h>
 #include "ast.h"
-#include "symtab.h"
-#include "semantic.h"
+#include "lexer.h"
+#include "parser.h"
+#include "semantico.h"
+#include "tabla_simbolos.h"
 
 extern FILE* yyin;
-int yyparse(void);
-
-int errores_lexicos = 0;
-int errores_sintacticos = 0;
-
-void error_lexico(int linea, const char* msg) {
-    errores_lexicos++;
-    printf("Error lexico (linea %d): %s\n", linea, msg);
-}
 
 int main(int argc, char** argv) {
     if (argc < 2) { printf("Uso: %s programa.nv\n", argv[0]); return 2; }

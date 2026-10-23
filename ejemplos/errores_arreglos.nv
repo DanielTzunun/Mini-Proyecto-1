@@ -1,0 +1,22 @@
+// Ejemplos de errores semanticos con arreglos.
+
+variable:entero[] mezclado = [1, "dos"];
+variable:entero[] vacio = [];
+
+variable:mensaje texto = [1, 2];
+variable:entero[] sin_valor;
+
+variable:entero x = sin_valor[0];
+variable:entero[] a = [1, 2];
+variable:entero y = a["0"];
+variable:entero z = a[0][0];
+
+agregar "x" en a;
+agregar 1 en texto;
+quitar de texto;
+
+constante:entero[] fijos = [1, 2];
+agregar 3 en fijos;
+quitar de sin_valor;
+
+variable:entero[] anidado = [[1], [2]];

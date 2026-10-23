@@ -1,4 +1,4 @@
-/* semantic.c - Reglas semanticas:
+/* semantico.c - Reglas semanticas:
  *  1. Toda variable debe declararse antes de usarse
  *  2. No se puede declarar dos veces el mismo identificador
  *  3. El tipo del valor debe coincidir con el tipo de la variable
@@ -9,8 +9,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include "ast.h"
-#include "symtab.h"
-#include "semantic.h"
+#include "tabla_simbolos.h"
+#include "semantico.h"
+#include "utils.h"
 
 #define MAX_ERRORES 200
 static char* mensajes[MAX_ERRORES];
@@ -44,6 +45,44 @@ static Tipo tipo_de(Expr* e) {
         return s->tipo;
     }
 
+    if (e->clase == EXPR_ARREGLO) {
+        Tipo elemento = TIPO_DESCONOCIDO;
+        for (Expr* it = e->izquierda; it; it = it->siguiente) {
+            Tipo actual = tipo_de(it);
+            if (actual == TIPO_DESCONOCIDO) return TIPO_DESCONOCIDO;
+            if (es_tipo_arreglo(actual)) {
+                error(it->linea, "no se permiten arreglos dentro de otro arreglo");
+                return TIPO_DESCONOCIDO;
+            }
+            if (elemento == TIPO_DESCONOCIDO) elemento = actual;
+            else if (actual != elemento) {
+                error(it->linea, "todos los elementos del arreglo deben ser del mismo tipo (%s y %s)",
+                      nombre_tipo(elemento), nombre_tipo(actual));
+                return TIPO_DESCONOCIDO;
+            }
+        }
+        e->tipo = (elemento == TIPO_DESCONOCIDO) ? TIPO_DESCONOCIDO : tipo_arreglo(elemento);
+        return e->tipo;
+    }
+
+    if (e->clase == EXPR_INDICE) {
+        Tipo tipo_arreglo_expr = tipo_de(e->izquierda);
+        if (tipo_arreglo_expr == TIPO_DESCONOCIDO) return TIPO_DESCONOCIDO;
+        if (!es_tipo_arreglo(tipo_arreglo_expr)) {
+            error(e->linea, "solo se puede indexar un arreglo, no un valor de tipo %s",
+                  nombre_tipo(tipo_arreglo_expr));
+            return TIPO_DESCONOCIDO;
+        }
+        Tipo tipo_indice = tipo_de(e->derecha);
+        if (tipo_indice != TIPO_DESCONOCIDO && tipo_indice != TIPO_ENTERO) {
+            error(e->linea, "el indice de un arreglo debe ser de tipo entero, no %s",
+                  nombre_tipo(tipo_indice));
+            return TIPO_DESCONOCIDO;
+        }
+        e->tipo = tipo_elemento(tipo_arreglo_expr);
+        return e->tipo;
+    }
+
     if (e->clase == EXPR_COMPARACION || e->clase == EXPR_OR) {
         Tipo izquierda = tipo_de(e->izquierda);
         Tipo derecha = tipo_de(e->derecha);
@@ -55,6 +94,10 @@ static Tipo tipo_de(Expr* e) {
                 return TIPO_DESCONOCIDO;
             }
         } else {
+            if (es_tipo_arreglo(izquierda) || es_tipo_arreglo(derecha)) {
+                error(e->linea, "no se pueden comparar arreglos");
+                return TIPO_DESCONOCIDO;
+            }
             if (izquierda != derecha) {
                 error(e->linea, "no se pueden comparar valores de tipo %s y %s",
                       nombre_tipo(izquierda), nombre_tipo(derecha));
@@ -73,8 +116,15 @@ static Tipo tipo_de(Expr* e) {
     return e->tipo;
 }
 
+static int arreglo_vacio(const Expr* e) {
+    return e && e->clase == EXPR_ARREGLO && e->izquierda == NULL;
+}
+
+
 
 static const char* valor_texto(const Expr* e) {
+    if (e->clase == EXPR_ARREGLO) return "arreglo";
+    if (e->clase == EXPR_INDICE) return "elemento";
     if (e->clase != EXPR_IDENT) return e->texto;
     Simbolo* s = buscar_simbolo(e->texto);
     return s ? s->valor : "-";
@@ -136,20 +186,71 @@ static void analizar_lista(Sentencia* lista, int dentro_funcion) {
             int ok = 1;
             const char* valor = "-";
             if (s->valor) {
-                Tipo tv = tipo_de(s->valor);
-                if (tv == TIPO_DESCONOCIDO) ok = 0;
-                else if (tv != s->tipo) {
-                    error(s->linea, "tipo incompatible: '%s' es %s pero se le da un valor de tipo %s",
-                          s->id, nombre_tipo(s->tipo), nombre_tipo(tv));
-                    ok = 0;
+                if (arreglo_vacio(s->valor)) {
+                    if (!es_tipo_arreglo(s->tipo)) {
+                        error(s->linea, "solo un arreglo puede inicializarse con un literal vacio []");
+                        ok = 0;
+                    } else {
+                        valor = "[]";
+                    }
+                } else {
+                    Tipo tv = tipo_de(s->valor);
+                    if (tv == TIPO_DESCONOCIDO) ok = 0;
+                    else if (tv != s->tipo) {
+                        error(s->linea, "tipo incompatible: '%s' es %s pero se le da un valor de tipo %s",
+                              s->id, nombre_tipo(s->tipo), nombre_tipo(tv));
+                        ok = 0;
+                    }
+                    if (ok) valor = valor_texto(s->valor);
                 }
-                if (ok) valor = valor_texto(s->valor);
             }
             if (!previo)
                 declarar_simbolo(s->id, s->tipo, s->es_constante, s->valor != NULL && ok, valor, s->linea);
+        } else if (s->clase == SENT_AGREGAR) {
+            Simbolo* dest = buscar_simbolo(s->id);
+            if (!dest) {
+                error(s->linea, "la variable '%s' no ha sido declarada", s->id);
+                continue;
+            }
+            if (!es_tipo_arreglo(dest->tipo)) {
+                error(s->linea, "'%s' no es un arreglo, es de tipo %s",
+                      s->id, nombre_tipo(dest->tipo));
+                continue;
+            }
+            if (dest->es_constante) {
+                error(s->linea, "'%s' es una constante y no se puede modificar", s->id);
+                continue;
+            }
+            Tipo tv = tipo_de(s->valor);
+            Tipo elemento = tipo_elemento(dest->tipo);
+            if (tv == TIPO_DESCONOCIDO) continue;
+            if (tv != elemento) {
+                error(s->linea, "tipo incompatible: '%s' es un arreglo de %s pero se agrega un valor de tipo %s",
+                      s->id, nombre_tipo(elemento), nombre_tipo(tv));
+                continue;
+            }
+            if (!dentro_funcion || dest->ambito > 0)
+                asignar_valor(dest, "arreglo");
+        } else if (s->clase == SENT_QUITAR) {
+            Simbolo* dest = buscar_simbolo(s->id);
+            if (!dest) {
+                error(s->linea, "la variable '%s' no ha sido declarada", s->id);
+                continue;
+            }
+            if (!es_tipo_arreglo(dest->tipo)) {
+                error(s->linea, "'%s' no es un arreglo, es de tipo %s",
+                      s->id, nombre_tipo(dest->tipo));
+                continue;
+            }
+            if (dest->es_constante) {
+                error(s->linea, "'%s' es una constante y no se puede modificar", s->id);
+                continue;
+            }
+            if (!dest->inicializada) {
+                error(s->linea, "el arreglo '%s' se usa pero todavia no tiene valor", s->id);
+            }
         } else {
             Simbolo* dest = buscar_simbolo(s->id);
-            Tipo tv = tipo_de(s->valor);
             if (!dest) {
                 error(s->linea, "la variable '%s' no ha sido declarada", s->id);
                 continue;
@@ -158,13 +259,20 @@ static void analizar_lista(Sentencia* lista, int dentro_funcion) {
                 error(s->linea, "'%s' es una constante y no se puede modificar", s->id);
                 continue;
             }
-            if (tv != TIPO_DESCONOCIDO && tv != dest->tipo) {
+            int vacio = arreglo_vacio(s->valor);
+            Tipo tv = vacio ? TIPO_DESCONOCIDO : tipo_de(s->valor);
+            if (vacio) {
+                if (!es_tipo_arreglo(dest->tipo)) {
+                    error(s->linea, "solo un arreglo puede recibir un literal vacio []");
+                    continue;
+                }
+            } else if (tv != TIPO_DESCONOCIDO && tv != dest->tipo) {
                 error(s->linea, "tipo incompatible: '%s' es %s pero se le da un valor de tipo %s",
                       s->id, nombre_tipo(dest->tipo), nombre_tipo(tv));
                 continue;
             }
-            if (tv != TIPO_DESCONOCIDO && (!dentro_funcion || dest->ambito > 0))
-                asignar_valor(dest, valor_texto(s->valor));
+            if ((vacio || tv != TIPO_DESCONOCIDO) && (!dentro_funcion || dest->ambito > 0))
+                asignar_valor(dest, vacio ? "[]" : valor_texto(s->valor));
         }
     }
 }

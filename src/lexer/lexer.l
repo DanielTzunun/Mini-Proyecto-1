@@ -1,11 +1,12 @@
 %{
-/* scanner.l - Analizador lexico de Nova (Flex) */
+/* lexer.l - Analizador lexico de Nova (Flex) */
 #include <stdio.h>
 #include <string.h>
 #include "ast.h"
+#include "lexer.h"
+#include "utils.h"
 #include "parser.tab.h"
 
-void error_lexico(int linea, const char* msg);
 #define YY_USER_ACTION yylloc.first_line = yylineno;
 %}
 
@@ -21,6 +22,9 @@ void error_lexico(int linea, const char* msg);
 "constante"                     { return T_CONSTANTE; }
 "guardar"                       { return T_GUARDAR; }
 "en"                            { return T_EN; }
+"agregar"                       { return T_AGREGAR; }
+"quitar"                        { return T_QUITAR; }
+"de"                            { return T_DE; }
 "funcion"                       { return T_FUNCION; }
 "if"                            { return T_IF; }
 "else"                          { return T_ELSE; }
@@ -40,8 +44,6 @@ void error_lexico(int linea, const char* msg);
 
 "verdadero"|"falso"             { yylval.str = copiar_cadena(yytext); return T_BOOL; }
 
-
-
 -?[0-9]+                        { yylval.str = copiar_cadena(yytext); return T_ENTERO; }
 \"[^\"\n]*\"                    { yylval.str = copiar_cadena(yytext); return T_MENSAJE; }
 \"[^\"\n]*                      { error_lexico(yylineno, "mensaje sin cerrar (falta la comilla final)"); }
@@ -49,8 +51,10 @@ void error_lexico(int linea, const char* msg);
 
 [a-zA-Z_][a-zA-Z0-9_]*          { yylval.str = copiar_cadena(yytext); return T_ID; }
 
+"["                             { return '['; }
+"]"                             { return ']'; }
+","                             { return ','; }
 [:=;(){}]                       { return yytext[0]; }
-
 
 .                               { char m[64];
                                   snprintf(m, sizeof m, "caracter no reconocido '%s'", yytext);

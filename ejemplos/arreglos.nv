@@ -1,0 +1,22 @@
+// Arreglos en Nova: declaracion, literal, acceso por indice y operaciones.
+
+variable:entero[] numeros = [1, 2, 3];
+variable:mensaje[] nombres = [];
+variable:signo[] letras = ['a', 'b'];
+variable:veracidad[] banderas = [verdadero, falso];
+
+variable:entero primero = numeros[0];
+variable:entero[] copia = numeros;
+
+agregar 4 en numeros;
+agregar 5 en numeros;
+quitar de numeros;
+
+guardar [7, 8] en copia;
+
+if (numeros[0] == 1) {
+    variable:entero dentro = numeros[1];
+    guardar dentro en primero;
+} else {
+    guardar 0 en primero;
+}
