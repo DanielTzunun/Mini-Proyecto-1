@@ -25,6 +25,7 @@
 "agregar"                       { return T_AGREGAR; }
 "quitar"                        { return T_QUITAR; }
 "de"                            { return T_DE; }
+"mostrar"                       { return T_MOSTRAR; }
 "funcion"                       { return T_FUNCION; }
 "if"                            { return T_IF; }
 "else"                          { return T_ELSE; }

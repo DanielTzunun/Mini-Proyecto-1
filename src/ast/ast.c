@@ -83,6 +83,10 @@ Sentencia* nueva_quitar(char* id, int linea) {
     return nueva_sentencia(SENT_QUITAR, 0, TIPO_DESCONOCIDO, id, NULL, linea);
 }
 
+Sentencia* nueva_mostrar(Expr* valor, int linea) {
+    return nueva_sentencia(SENT_MOSTRAR, 0, TIPO_DESCONOCIDO, NULL, valor, linea);
+}
+
 void agregar_sentencia(Sentencia* s) {
     if (!programa_inicio) programa_inicio = s;
     else programa_fin->siguiente = s;

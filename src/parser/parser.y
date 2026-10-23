@@ -26,6 +26,7 @@
 %token T_AGREGAR   "agregar"
 %token T_QUITAR    "quitar"
 %token T_DE        "de"
+%token T_MOSTRAR   "mostrar"
 %token T_FUNCION   "funcion"
 %token T_IF        "if"
 %token T_ELSE      "else"
@@ -46,7 +47,7 @@
 %type <tipo> tipo_declarado
 %type <expr> expresion condicion lista_expresiones
 %type <sent> sentencia sentencia_bloque declaracion asignacion funcion llamada
-%type <sent> bloque_funcion condicional agregar quitar
+%type <sent> bloque_funcion condicional agregar quitar mostrar
 
 %left T_OR
 %nonassoc T_IGUAL T_DISTINTO T_MAYOR T_MENOR T_MAYOR_IGUAL T_MENOR_IGUAL
@@ -66,6 +67,7 @@ sentencia
     | llamada ';'               { $$ = $1; }
     | agregar ';'               { $$ = $1; }
     | quitar ';'                { $$ = $1; }
+    | mostrar ';'               { $$ = $1; }
     | error ';'                 { yyerrok; $$ = NULL; }   /* recuperacion de errores */
     ;
 
@@ -76,6 +78,7 @@ sentencia_bloque
     | condicional               { $$ = $1; }
     | agregar ';'               { $$ = $1; }
     | quitar ';'                { $$ = $1; }
+    | mostrar ';'               { $$ = $1; }
     ;
 
 funcion
@@ -109,6 +112,11 @@ agregar
 quitar
     : T_QUITAR T_DE T_ID
         { $$ = nueva_quitar($3, @1.first_line); }
+    ;
+
+mostrar
+    : T_MOSTRAR condicion
+        { $$ = nueva_mostrar($2, @1.first_line); }
     ;
 
 tipo_declarado

@@ -1,4 +1,4 @@
-# Nova - compilador en C (Flex / Bison)
+# Nova - compilador e interprete en C (Flex / Bison)
 
 ## Compilar y ejecutar
 
@@ -22,6 +22,11 @@ Tambien se puede usar `make run` para compilar y ejecutar `ejemplos/correcto.nv`
 | `src/parser/parser_soporte.c` | Apoyo del parser y mensajes de error |
 | `src/semantico/semantico.c` | Analizador semantico |
 | `src/tabla_simbolos.c` | Tabla de simbolos (lista enlazada) |
+| `include/runtime.h` | Interfaz de ejecucion |
+| `src/runtime/runtime.c` | Punto de entrada del interprete |
+| `src/runtime/valores.c` | Valores y operaciones basicas |
+| `src/runtime/expresiones.c` | Evaluacion de expresiones |
+| `src/runtime/sentencias.c` | Ejecucion de sentencias y variables |
 | `src/utils.c` | Utilidades comunes |
 | `src/main.c` | Ejecuta las fases en orden |
 
@@ -51,7 +56,6 @@ asignaciones, llamadas a otras funciones y condicionales:
         guardar 0 en edad;
     }
 
-Nova analiza la sintaxis y valida las llamadas; todavia no ejecuta los programas.
 Las condiciones de `if` aceptan valores de tipo veracidad, comparaciones (`==`, `!=`, `>`,
 `<`, `>=`, `<=`) y el operador `or`. Tambien se aceptan `is`/`is not`, `greater`/`less`
 y `||` como aliases. Cada rama crea su propio ambito.
@@ -82,6 +86,28 @@ Reglas semanticas de los arreglos:
 7. `quitar` exige un arreglo que ya tenga valor.
 8. Una constante de tipo arreglo no se puede modificar.
 
+## Ejecucion
+
+La instruccion `mostrar` evalua una expresion y la imprime en pantalla:
+
+    variable:entero[] numeros = [10, 20, 30];
+    variable:mensaje saludo = "Hola Nova";
+
+    mostrar saludo;                 // Hola Nova
+    mostrar numeros;                // [10, 20, 30]
+    mostrar numeros[1];             // 20
+    mostrar numeros[0] == 10;       // verdadero
+
+    agregar 40 en numeros;
+    mostrar numeros;                // [10, 20, 30, 40]
+
+    quitar de numeros;
+    mostrar numeros;                // [10, 20, 30]
+
+La ejecucion respeta los ambitos de funciones y de las ramas de `if`. Tambien detecta
+errores en tiempo de ejecucion, por ejemplo un indice fuera de rango o `quitar` sobre
+un arreglo vacio.
+
 ## Reglas semanticas generales
 
 1. Declarar antes de usar.
@@ -96,7 +122,9 @@ Reglas semanticas de los arreglos:
 - `ejemplos/funciones.nv`
 - `ejemplos/condicionales.nv`
 - `ejemplos/arreglos.nv`
+- `ejemplos/ejecucion.nv`
 - `ejemplos/errores_semanticos.nv`
 - `ejemplos/errores_arreglos.nv`
 - `ejemplos/errores_sintacticos.nv`
 - `ejemplos/error_lexico.nv`
+- `ejemplos/error_ejecucion.nv`

@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "lexer.h"
 #include "parser.h"
+#include "runtime.h"
 #include "semantico.h"
 #include "tabla_simbolos.h"
 
@@ -46,6 +47,14 @@ int main(int argc, char** argv) {
     imprimir_tabla_simbolos();
 
     if (n > 0) { printf("\nCompilacion con %d error(es) semantico(s).\n", n); return 1; }
-    printf("\nCompilacion exitosa.\n");
+
+    /* 6) Ejecucion: solo si no hubo errores lexicos, sintacticos ni semanticos */
+    printf("\n--- EJECUCION ---\n");
+    if (!ejecutar_programa(programa_inicio)) {
+        printf("\nEjecucion con errores.\n");
+        return 1;
+    }
+
+    printf("\nCompilacion y ejecucion exitosas.\n");
     return 0;
 }

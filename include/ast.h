@@ -45,6 +45,7 @@ typedef enum {
     SENT_FUNCION,
     SENT_LLAMADA,
     SENT_CONDICIONAL,
+    SENT_MOSTRAR,
     SENT_AGREGAR,
     SENT_QUITAR
 } ClaseSent;
@@ -78,6 +79,7 @@ Expr*      nueva_expr_indice(Expr* arreglo, Expr* indice, int linea);
 Expr*      anexar_expresion(Expr* inicio, Expr* nueva);
 Sentencia* nueva_agregar(char* id, Expr* valor, int linea);
 Sentencia* nueva_quitar(char* id, int linea);
+Sentencia* nueva_mostrar(Expr* valor, int linea);
 
 void       agregar_sentencia(Sentencia* s);
 

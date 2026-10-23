@@ -55,6 +55,8 @@ static void detalle_sent(const Sentencia* s, char* buf, size_t n) {
         snprintf(buf, n, "agregar en %s", s->id);
     else if (s->clase == SENT_QUITAR)
         snprintf(buf, n, "quitar de %s", s->id);
+    else if (s->clase == SENT_MOSTRAR)
+        snprintf(buf, n, "mostrar");
     else
         snprintf(buf, n, "llamada %s()", s->id);
 }
@@ -98,7 +100,10 @@ static void imprimir_lista_arbol(const Sentencia* lista, int nivel) {
             if (s->clase == SENT_CONDICIONAL) {
                 printf("%*s  Condicion:\n", nivel * 2, "");
                 imprimir_expr_arbol(s->valor, nivel + 2);
-            } else if (s->valor->clase == EXPR_ARREGLO) {
+            } else if (s->valor->clase == EXPR_ARREGLO ||
+                       s->valor->clase == EXPR_INDICE ||
+                       s->valor->clase == EXPR_COMPARACION ||
+                       s->valor->clase == EXPR_OR) {
                 printf("%*s  Valor:\n", nivel * 2, "");
                 imprimir_expr_arbol(s->valor, nivel + 2);
             } else {
@@ -131,7 +136,8 @@ static void imprimir_lista_tabla(const Sentencia* lista, int padre, int* siguien
                             s->clase == SENT_FUNCION ? "Funcion" :
                             s->clase == SENT_CONDICIONAL ? "Condicional" :
                             s->clase == SENT_AGREGAR ? "Agregar" :
-                            s->clase == SENT_QUITAR ? "Quitar" : "Llamada";
+                            s->clase == SENT_QUITAR ? "Quitar" :
+                            s->clase == SENT_MOSTRAR ? "Mostrar" : "Llamada";
         printf("%-4d %-14s %-6d %-34s %-5d\n", id_sent, clase, padre, detalle, s->linea);
         if (s->valor)
             imprimir_expr_tabla(s->valor, id_sent, siguiente_id);

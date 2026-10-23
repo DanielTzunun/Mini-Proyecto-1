@@ -16,6 +16,7 @@ SOURCES := $(wildcard $(SRC_DIR)/*.c \
                      $(SRC_DIR)/ast/*.c \
                      $(SRC_DIR)/lexer/*.c \
                      $(SRC_DIR)/parser/*.c \
+                     $(SRC_DIR)/runtime/*.c \
                      $(SRC_DIR)/semantico/*.c)
 HEADERS := $(wildcard $(INCLUDE_DIR)/*.h $(SRC_DIR)/*/*.h)
 OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES))

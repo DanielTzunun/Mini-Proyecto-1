@@ -1,0 +1,34 @@
+// Ejemplo de ejecucion de Nova.
+
+variable:entero[] numeros = [10, 20, 30];
+variable:mensaje saludo = "Hola Nova";
+variable:veracidad activo = verdadero;
+
+mostrar saludo;
+mostrar numeros;
+mostrar numeros[1];
+mostrar activo;
+mostrar numeros[0] == 10;
+
+agregar 40 en numeros;
+mostrar numeros;
+
+quitar de numeros;
+mostrar numeros;
+
+if (numeros[0] == 10) {
+    mostrar "El primer elemento es 10";
+} else {
+    mostrar "No coincide";
+}
+
+funcion probar() {
+    variable:entero local = 99;
+    mostrar local;
+    agregar 50 en numeros;
+    mostrar numeros;
+}
+
+probar();
+
+mostrar "Fin";

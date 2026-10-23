@@ -178,6 +178,10 @@ static void analizar_lista(Sentencia* lista, int dentro_funcion) {
             analizar_condicional(s, dentro_funcion);
             continue;
         }
+        if (s->clase == SENT_MOSTRAR) {
+            tipo_de(s->valor);
+            continue;
+        }
         if (s->clase == SENT_DECLARACION) {
             Simbolo* previo = buscar_simbolo(s->id);
             if (previo)
