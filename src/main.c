@@ -1,19 +1,13 @@
 /* main.c - Programa principal del compilador Nova */
 #include <stdio.h>
 #include "ast.h"
-#include "symtab.h"
-#include "semantic.h"
+#include "lexer.h"
+#include "parser.h"
+#include "runtime.h"
+#include "semantico.h"
+#include "tabla_simbolos.h"
 
 extern FILE* yyin;
-int yyparse(void);
-
-int errores_lexicos = 0;
-int errores_sintacticos = 0;
-
-void error_lexico(int linea, const char* msg) {
-    errores_lexicos++;
-    printf("Error lexico (linea %d): %s\n", linea, msg);
-}
 
 int main(int argc, char** argv) {
     if (argc < 2) { printf("Uso: %s programa.nv\n", argv[0]); return 2; }
@@ -53,6 +47,14 @@ int main(int argc, char** argv) {
     imprimir_tabla_simbolos();
 
     if (n > 0) { printf("\nCompilacion con %d error(es) semantico(s).\n", n); return 1; }
-    printf("\nCompilacion exitosa.\n");
+
+    /* 6) Ejecucion: solo si no hubo errores lexicos, sintacticos ni semanticos */
+    printf("\n--- EJECUCION ---\n");
+    if (!ejecutar_programa(programa_inicio)) {
+        printf("\nEjecucion con errores.\n");
+        return 1;
+    }
+
+    printf("\nCompilacion y ejecucion exitosas.\n");
     return 0;
 }

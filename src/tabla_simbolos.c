@@ -1,8 +1,9 @@
-/* symtab.c */
+/* tabla_simbolos.c */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "symtab.h"
+#include "tabla_simbolos.h"
+#include "utils.h"
 
 static Simbolo* inicio = NULL;
 static Simbolo* fin = NULL;

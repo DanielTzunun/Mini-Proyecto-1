@@ -1,0 +1,22 @@
+// Operadores aritmeticos de Nova.
+
+variable:entero a = 10;
+variable:entero b = 3;
+variable:entero[] numeros = [1, 2, 3];
+
+mostrar a + b;
+mostrar a - b;
+mostrar a * b;
+mostrar a / b;
+mostrar (a + b) * 2;
+mostrar -a;
+mostrar a - -b;
+mostrar numeros[0] + numeros[1] * numeros[2];
+mostrar -numeros[1];
+mostrar a > b + 20;
+
+variable:entero resultado = a + b * 2;
+mostrar resultado;
+
+guardar resultado * 2 en a;
+mostrar a;

@@ -1,6 +1,6 @@
-/* symtab.h - Tabla de simbolos de Nova (lista enlazada) */
-#ifndef SYMTAB_H
-#define SYMTAB_H
+/* tabla_simbolos.h - Tabla de simbolos de Nova (lista enlazada) */
+#ifndef TABLA_SIMBOLOS_H
+#define TABLA_SIMBOLOS_H
 #include "ast.h"
 
 typedef struct Simbolo {

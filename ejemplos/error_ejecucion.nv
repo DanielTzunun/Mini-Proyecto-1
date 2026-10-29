@@ -1,0 +1,4 @@
+// Error en tiempo de ejecucion: indice fuera de rango.
+
+variable:entero[] numeros = [1, 2];
+mostrar numeros[5];

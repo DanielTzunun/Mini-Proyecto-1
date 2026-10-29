@@ -1,0 +1,5 @@
+// Error en tiempo de ejecucion: division entre cero.
+
+variable:entero a = 10;
+variable:entero b = 0;
+mostrar a / b;

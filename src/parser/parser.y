@@ -4,21 +4,9 @@
 
 %{
 /* parser.y - Analizador sintactico de Nova (Bison) */
-#include <stdio.h>
-#include <string.h>
 #include "ast.h"
-
-int yylex(void);
-void yyerror(const char* msg);
-extern int errores_sintacticos;
-
-static Sentencia* anexar_a_lista(Sentencia* inicio, Sentencia* nueva) {
-    if (!inicio) return nueva;
-    Sentencia* ultimo = inicio;
-    while (ultimo->siguiente) ultimo = ultimo->siguiente;
-    ultimo->siguiente = nueva;
-    return inicio;
-}
+#include "parser_interno.h"
+#include "utils.h"
 %}
 
 %locations
@@ -35,6 +23,10 @@ static Sentencia* anexar_a_lista(Sentencia* inicio, Sentencia* nueva) {
 %token T_CONSTANTE "constante"
 %token T_GUARDAR   "guardar"
 %token T_EN        "en"
+%token T_AGREGAR   "agregar"
+%token T_QUITAR    "quitar"
+%token T_DE        "de"
+%token T_MOSTRAR   "mostrar"
 %token T_FUNCION   "funcion"
 %token T_IF        "if"
 %token T_ELSE      "else"
@@ -52,12 +44,17 @@ static Sentencia* anexar_a_lista(Sentencia* inicio, Sentencia* nueva) {
 %token <str>  T_SIGNO   "signo"
 %token <str>  T_BOOL    "verdadero/falso"
 
-%type <expr> expresion condicion
+%type <tipo> tipo_declarado
+%type <expr> expresion condicion lista_expresiones
 %type <sent> sentencia sentencia_bloque declaracion asignacion funcion llamada
-%type <sent> bloque_funcion condicional
+%type <sent> bloque_funcion condicional agregar quitar mostrar
 
 %left T_OR
 %nonassoc T_IGUAL T_DISTINTO T_MAYOR T_MENOR T_MAYOR_IGUAL T_MENOR_IGUAL
+%left '+' '-'
+%left '*' '/'
+%precedence NEG
+%precedence '['
 
 %%
 
@@ -72,6 +69,9 @@ sentencia
     | funcion                   { $$ = $1; }
     | condicional               { $$ = $1; }
     | llamada ';'               { $$ = $1; }
+    | agregar ';'               { $$ = $1; }
+    | quitar ';'                { $$ = $1; }
+    | mostrar ';'               { $$ = $1; }
     | error ';'                 { yyerrok; $$ = NULL; }   /* recuperacion de errores */
     ;
 
@@ -80,6 +80,9 @@ sentencia_bloque
     | asignacion ';'            { $$ = $1; }
     | llamada ';'               { $$ = $1; }
     | condicional               { $$ = $1; }
+    | agregar ';'               { $$ = $1; }
+    | quitar ';'                { $$ = $1; }
+    | mostrar ';'               { $$ = $1; }
     ;
 
 funcion
@@ -105,12 +108,32 @@ llamada
         { $$ = nueva_llamada($1, @1.first_line); }
     ;
 
+agregar
+    : T_AGREGAR expresion T_EN T_ID
+        { $$ = nueva_agregar($4, $2, @1.first_line); }
+    ;
+
+quitar
+    : T_QUITAR T_DE T_ID
+        { $$ = nueva_quitar($3, @1.first_line); }
+    ;
+
+mostrar
+    : T_MOSTRAR condicion
+        { $$ = nueva_mostrar($2, @1.first_line); }
+    ;
+
+tipo_declarado
+    : T_TIPO                    { $$ = $1; }
+    | T_TIPO '[' ']'            { $$ = tipo_arreglo($1); }
+    ;
+
 declaracion
-    : T_VARIABLE ':' T_TIPO T_ID
+    : T_VARIABLE ':' tipo_declarado T_ID
         { $$ = nueva_sentencia(SENT_DECLARACION, 0, $3, $4, NULL, @1.first_line); }
-    | T_VARIABLE ':' T_TIPO T_ID '=' expresion
+    | T_VARIABLE ':' tipo_declarado T_ID '=' expresion
         { $$ = nueva_sentencia(SENT_DECLARACION, 0, $3, $4, $6, @1.first_line); }
-    | T_CONSTANTE ':' T_TIPO T_ID '=' expresion
+    | T_CONSTANTE ':' tipo_declarado T_ID '=' expresion
         { $$ = nueva_sentencia(SENT_DECLARACION, 1, $3, $4, $6, @1.first_line); }
     ;
 
@@ -125,6 +148,30 @@ expresion
     | T_SIGNO    { $$ = nueva_expr(EXPR_SIGNO,     $1, @1.first_line, TIPO_SIGNO); }
     | T_BOOL     { $$ = nueva_expr(EXPR_VERACIDAD, $1, @1.first_line, TIPO_VERACIDAD); }
     | T_ID       { $$ = nueva_expr(EXPR_IDENT,     $1, @1.first_line, TIPO_DESCONOCIDO); }
+    | expresion '+' expresion
+                 { $$ = nueva_expr_binaria(EXPR_ARITMETICA, copiar_cadena("+"), $1, $3, @2.first_line); }
+    | expresion '-' expresion
+                 { $$ = nueva_expr_binaria(EXPR_ARITMETICA, copiar_cadena("-"), $1, $3, @2.first_line); }
+    | expresion '*' expresion
+                 { $$ = nueva_expr_binaria(EXPR_ARITMETICA, copiar_cadena("*"), $1, $3, @2.first_line); }
+    | expresion '/' expresion
+                 { $$ = nueva_expr_binaria(EXPR_ARITMETICA, copiar_cadena("/"), $1, $3, @2.first_line); }
+    | '-' expresion %prec NEG
+                 { $$ = nueva_expr_unaria(EXPR_NEGATIVO, copiar_cadena("-"), $2, @1.first_line); }
+    | '(' expresion ')'
+                 { $$ = $2; }
+    | '[' ']'    { $$ = nueva_expr_arreglo(NULL, @1.first_line); }
+    | '[' lista_expresiones ']'
+                 { $$ = nueva_expr_arreglo($2, @1.first_line); }
+    | expresion '[' expresion ']' %prec '['
+                 { $$ = nueva_expr_indice($1, $3, @2.first_line); }
+    ;
+
+lista_expresiones
+    : expresion
+                 { $$ = $1; }
+    | lista_expresiones ',' expresion
+                 { $$ = anexar_expresion($1, $3); }
     ;
 
 condicion
@@ -147,33 +194,3 @@ condicion
     ;
 
 %%
-
-/* Reemplaza todas las apariciones de 'a' por 'b' dentro de s */
-static void reemplazar(char* s, size_t cap, const char* a, const char* b) {
-    char tmp[512];
-    size_t i = 0, j = 0, la = strlen(a), lb = strlen(b);
-    while (s[i] && j < sizeof(tmp) - 1) {
-        if (strncmp(s + i, a, la) == 0) {
-            for (size_t k = 0; k < lb && j < sizeof(tmp) - 1; k++) tmp[j++] = b[k];
-            i += la;
-        } else tmp[j++] = s[i++];
-    }
-    tmp[j] = '\0';
-    strncpy(s, tmp, cap - 1);
-    s[cap - 1] = '\0';
-}
-
-void yyerror(const char* msg) {
-    char m[512];
-    snprintf(m, sizeof m, "%s", msg);
-    reemplazar(m, sizeof m, "syntax error, ", "");
-    reemplazar(m, sizeof m, "syntax error", "sintaxis invalida");
-    reemplazar(m, sizeof m, "unexpected ", "se encontro ");
-    reemplazar(m, sizeof m, ", expecting ", ", se esperaba ");
-    reemplazar(m, sizeof m, " or ", " o ");
-    reemplazar(m, sizeof m, "end of file", "fin del archivo");
-    if (strstr(m, "se esperaba ';'") && strlen(m) < 400)
-        strcat(m, " (revise si falta ';' al final de la linea anterior)");
-    errores_sintacticos++;
-    printf("Error sintactico (linea %d): %s\n", yylloc.first_line, m);
-}
